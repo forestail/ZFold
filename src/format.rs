@@ -2,9 +2,9 @@ use crate::crypto::{FLAG_ENCRYPTED, SALT_LEN};
 use anyhow::{ensure, Context, Result};
 use std::io::{Cursor, Read, Write};
 
-pub const HEADER_MAGIC: [u8; 4] = *b"HPK1";
-pub const FOOTER_MAGIC: [u8; 4] = *b"HPKF";
-pub const INDEX_MAGIC: [u8; 4] = *b"HPKI";
+pub const HEADER_MAGIC: [u8; 4] = *b"ZPK1";
+pub const FOOTER_MAGIC: [u8; 4] = *b"ZPKF";
+pub const INDEX_MAGIC: [u8; 4] = *b"ZPKI";
 pub const ARCHIVE_VERSION: u16 = 1;
 pub const FLAG_HAS_DICT: u16 = 0x0001;
 pub const CODEC_ZSTD: u8 = 1;

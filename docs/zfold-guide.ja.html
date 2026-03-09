@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>zfold 使い方ガイド</title>
+  <style>
+    :root {
+      --bg: #f6f1e8;
+      --paper: #fffdf9;
+      --ink: #1f2937;
+      --muted: #5b6472;
+      --line: #ddd3c4;
+      --teal: #0f766e;
+      --teal-soft: #d9f1ea;
+      --orange: #d97706;
+      --orange-soft: #fde9cc;
+      --navy: #19486a;
+      --navy-soft: #deebf5;
+      --green: #3f7d58;
+      --green-soft: #deefd9;
+      --shadow: 0 18px 50px rgba(25, 72, 106, 0.12);
+      --radius: 24px;
+      --radius-sm: 16px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "BIZ UDPGothic", "Yu Gothic UI", "Meiryo", sans-serif;
+      line-height: 1.8;
+      background:
+        radial-gradient(circle at 12% 18%, rgba(15,118,110,.10), transparent 22%),
+        radial-gradient(circle at 86% 15%, rgba(217,119,6,.12), transparent 20%),
+        linear-gradient(180deg, #faf5ec 0%, #f4efe5 100%);
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      line-height: 1.25;
+      font-family: "Yu Mincho", "Hiragino Mincho ProN", serif;
+    }
+
+    a { color: var(--navy); }
+    code, pre { font-family: "Cascadia Code", "Consolas", monospace; }
+
+    .wrap { width: min(1180px, calc(100% - 32px)); margin: 0 auto; }
+    .hero {
+      margin: 28px auto 18px;
+      padding: 34px;
+      border-radius: 30px;
+      color: #fffdf9;
+      background: linear-gradient(135deg, rgba(25,72,106,.97), rgba(15,118,110,.94));
+      box-shadow: var(--shadow);
+    }
+    .hero p { color: rgba(255,253,249,.86); max-width: 46rem; margin: 14px 0 0; }
+    .eyebrow {
+      display: inline-block;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.14);
+      font-size: .82rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .hero h1 { margin-top: 16px; font-size: clamp(2.1rem, 4vw, 3.8rem); }
+    .hero-tags, .tag-row, .flow { display: flex; flex-wrap: wrap; gap: 10px; }
+    .tag {
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: .88rem;
+      font-weight: 700;
+    }
+    .tag.light { background: rgba(255,255,255,.14); color: #fffdf9; }
+    .tag.teal { background: var(--teal-soft); color: var(--teal); }
+    .tag.orange { background: var(--orange-soft); color: var(--orange); }
+    .tag.navy { background: var(--navy-soft); color: var(--navy); }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 270px minmax(0, 1fr);
+      gap: 22px;
+      align-items: start;
+      margin-bottom: 34px;
+    }
+    .toc, .section {
+      background: rgba(255,253,249,.92);
+      border: 1px solid rgba(25,72,106,.09);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+    .toc {
+      position: sticky;
+      top: 16px;
+      padding: 18px 18px 20px;
+    }
+    .toc h2 { font-size: 1rem; margin-bottom: 8px; }
+    .toc p { color: var(--muted); font-size: .9rem; margin: 0 0 10px; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-top: 4px; color: var(--muted); font-size: .92rem; }
+    .toc a { text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+
+    .article { display: grid; gap: 18px; }
+    .section { padding: 24px 26px 26px; }
+    .section-head {
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(25,72,106,.08);
+    }
+    .num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      margin-bottom: 10px;
+      font-size: .9rem;
+      font-weight: 800;
+      color: var(--navy);
+      background: var(--navy-soft);
+    }
+    .lead { margin-top: 10px; color: var(--muted); }
+
+    .cards, .compare, .mini-grid {
+      display: grid;
+      gap: 14px;
+      margin-top: 14px;
+    }
+    .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .cards.examples { grid-template-columns: 1fr; }
+    .compare, .mini-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .mini-grid.stack { grid-template-columns: 1fr; }
+    .card, .panel, .summary-item {
+      padding: 16px 18px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--paper);
+    }
+    .card.teal { background: linear-gradient(180deg, #fffdf8 0%, #eef9f6 100%); }
+    .card.orange { background: linear-gradient(180deg, #fffdf8 0%, #fff4e3 100%); }
+    .card.navy { background: linear-gradient(180deg, #fffdf8 0%, #eef5fb 100%); }
+    .card.green { background: linear-gradient(180deg, #fffdf8 0%, #eff8ec 100%); }
+    .panel h3, .card h3 { margin-bottom: 8px; font-size: 1.1rem; }
+
+    .callout {
+      margin-top: 16px;
+      padding: 15px 17px;
+      border-left: 6px solid var(--navy);
+      border-radius: var(--radius-sm);
+      background: var(--navy-soft);
+    }
+    .callout.warn { border-left-color: var(--orange); background: var(--orange-soft); }
+    .callout.good { border-left-color: var(--green); background: var(--green-soft); }
+
+    .diagram {
+      margin-top: 16px;
+      padding: 16px;
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(255,253,249,.96), rgba(250,246,239,.96));
+      border: 1px solid rgba(25,72,106,.08);
+    }
+    .diagram-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .step {
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: var(--paper);
+    }
+    .stack, .chunk-box {
+      margin-top: 12px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .file {
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      font-size: .86rem;
+      font-weight: 700;
+    }
+    .chunk {
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: var(--teal-soft);
+      border: 1px solid rgba(15,118,110,.18);
+      font-weight: 700;
+      color: var(--teal);
+    }
+    .arrow { font-size: 1.4rem; font-weight: 700; color: var(--muted); }
+
+    pre {
+      margin: 14px 0 0;
+      padding: 16px 18px;
+      overflow-x: auto;
+      border-radius: 18px;
+      background: #162433;
+      color: #edf4f6;
+    }
+
+    .summary-list { display: grid; gap: 10px; margin-top: 14px; }
+    .summary-item {
+      display: grid;
+      grid-template-columns: 36px 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+    .summary-item strong {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      color: var(--teal);
+      background: var(--teal-soft);
+    }
+
+    .footer {
+      padding: 0 0 30px;
+      color: var(--muted);
+      font-size: .88rem;
+    }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .toc { position: static; }
+    }
+    @media (max-width: 720px) {
+      .cards, .compare, .mini-grid, .diagram-grid { grid-template-columns: 1fr; }
+      .hero, .section { padding: 22px 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <span class="eyebrow">Guide Book</span>
+      <h1>zfold 使い方ガイド</h1>
+      <p>
+        zfold は、似た小ファイルがたくさんあるディレクトリを、効率よく
+        <code>.zpk</code> アーカイブへまとめるためのツールです。ZIP との違い、辞書ファイルの意味、
+        使いどころ、設定の考え方まで、初めて触る人にも分かる形で整理しました。
+      </p>
+      <div class="hero-tags">
+        <span class="tag light">solid archive 的な圧縮</span>
+        <span class="tag light">zstd + 辞書圧縮</span>
+        <span class="tag light">小さい類似ファイル向き</span>
+      </div>
+    </header>
+
+    <div class="layout">
+      <nav class="toc" aria-label="目次">
+        <h2>目次</h2>
+        <p>気になるところから読めます。</p>
+        <ol>
+          <li><a href="#about">zfold とは</a></li>
+          <li><a href="#commands">何ができるか</a></li>
+          <li><a href="#quickstart">基本の使い方</a></li>
+          <li><a href="#difference">ZIP との違い</a></li>
+          <li><a href="#pros-cons">長所と注意点</a></li>
+          <li><a href="#chunk">チャンクサイズ</a></li>
+          <li><a href="#dict">辞書ファイル</a></li>
+          <li><a href="#train">辞書の作り方</a></li>
+          <li><a href="#choose">使い分け</a></li>
+          <li><a href="#security">暗号化と verify</a></li>
+          <li><a href="#summary">まとめ</a></li>
+        </ol>
+      </nav>
+
+      <article class="article">
+        <section class="section" id="about">
+          <div class="section-head">
+            <span class="num">01</span>
+            <h2>zfold とは</h2>
+            <p class="lead">
+              ディレクトリを 1 つのアーカイブにまとめるコマンドラインツールです。単なる「固める」だけでなく、
+              小さい類似ファイル群を効率よく圧縮して保存することに向いています。
+            </p>
+          </div>
+          <div class="cards">
+            <div class="card teal">
+              <h3>向いている用途</h3>
+              <ul>
+                <li>小さいファイルが大量にある</li>
+                <li>内容が似たファイルが多い</li>
+                <li>スナップショットやバックアップをまとめたい</li>
+              </ul>
+            </div>
+            <div class="card navy">
+              <h3>できること</h3>
+              <ul>
+                <li>圧縮して 1 つにまとめる</li>
+                <li>一覧表示する</li>
+                <li>展開する</li>
+                <li>壊れていないか検証する</li>
+              </ul>
+            </div>
+            <div class="card orange">
+              <h3>生成されるもの</h3>
+              <ul>
+                <li>通常は <code>.zpk</code> ファイル 1 つ</li>
+                <li>辞書を使う場合もアーカイブ単体で解凍できる</li>
+                <li>必要なら暗号化もできる</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="commands">
+          <div class="section-head">
+            <span class="num">02</span>
+            <h2>何ができるか</h2>
+            <p class="lead">zfold には、運用に必要な基本コマンドが揃っています。</p>
+          </div>
+          <div class="cards">
+            <div class="card teal">
+              <h3><code>zfold pack</code></h3>
+              <p>ディレクトリをアーカイブにまとめます。</p>
+            </div>
+            <div class="card navy">
+              <h3><code>zfold list</code></h3>
+              <p>アーカイブの中身を一覧表示します。</p>
+            </div>
+            <div class="card orange">
+              <h3><code>zfold extract</code></h3>
+              <p>必要なファイルを取り出します。</p>
+            </div>
+            <div class="card green">
+              <h3><code>zfold verify</code></h3>
+              <p>アーカイブ構造と内容が壊れていないかを確認します。</p>
+            </div>
+            <div class="card navy">
+              <h3><code>zfold train-dict</code></h3>
+              <p>圧縮率を上げるための辞書ファイルを作ります。</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="quickstart">
+          <div class="section-head">
+            <span class="num">03</span>
+            <h2>まずは一番基本の使い方</h2>
+            <p class="lead">最初は辞書なし、暗号化なしで動きを掴むのが分かりやすいです。</p>
+          </div>
+          <pre><code>zfold pack ./dataset -o dataset.zpk
+zfold list dataset.zpk
+zfold extract dataset.zpk -d ./out
+zfold verify dataset.zpk</code></pre>
+          <div class="callout">
+            <strong>覚え方:</strong> <code>pack → list → extract → verify</code> の 4 つを押さえると、まず困りません。
+          </div>
+        </section>
+
+        <section class="section" id="difference">
+          <div class="section-head">
+            <span class="num">04</span>
+            <h2>普通の ZIP と何が違うのか</h2>
+            <p class="lead">
+              一番大きい違いは圧縮の単位です。ZIP は基本的にファイルごと、zfold はチャンクごとにまとめて圧縮します。
+            </p>
+          </div>
+          <div class="compare">
+            <div class="panel">
+              <h3>ZIP</h3>
+              <ul>
+                <li>各ファイルを 1 個ずつ別々に圧縮</li>
+                <li>1 ファイル単位で取り出しやすい</li>
+                <li>ファイルをまたぐ共通パターンは活かしにくい</li>
+              </ul>
+            </div>
+            <div class="panel">
+              <h3>zfold</h3>
+              <ul>
+                <li>複数ファイルをチャンクにまとめて圧縮</li>
+                <li>小さい類似ファイル群で圧縮率が上がりやすい</li>
+                <li>一部展開でもチャンク全体を読む必要がある</li>
+              </ul>
+            </div>
+          </div>
+          <div class="diagram">
+            <div class="diagram-grid">
+              <div class="step">
+                <h3>ZIP: 別々に圧縮</h3>
+                <div class="stack">
+                  <span class="file">a.html</span>
+                  <span class="file">b.html</span>
+                  <span class="file">c.json</span>
+                  <span class="arrow">→</span>
+                  <span class="file">zip</span>
+                </div>
+                <p>似たファイルが並んでいても、別のファイルとして扱われるので、共通パターンをまたいで活かしにくいです。</p>
+              </div>
+              <div class="step">
+                <h3>zfold: チャンクでまとめて圧縮</h3>
+                <div class="chunk-box">
+                  <span class="file">a.html</span>
+                  <span class="file">b.html</span>
+                  <span class="file">c.json</span>
+                  <span class="arrow">→</span>
+                  <span class="chunk">chunk まとめ圧縮</span>
+                  <span class="arrow">→</span>
+                  <span class="file">.zpk</span>
+                </div>
+                <p>似た HTML / JSON の繰り返しをまとめて拾いやすく、小さい類似ファイルが多いほど効きやすくなります。</p>
+              </div>
+            </div>
+          </div>
+          <div class="callout good">
+            <strong>zfold の強み:</strong> 「小さい」「似ている」「大量にある」ファイル群では、ZIP より有利になりやすいです。
+          </div>
+        </section>
+        <section class="section" id="pros-cons">
+          <div class="section-head">
+            <span class="num">05</span>
+            <h2>zfold の長所と注意点</h2>
+            <p class="lead">向くデータではかなり気持ちよく使えますが、性質を知っておくと失敗しにくくなります。</p>
+          </div>
+          <div class="mini-grid">
+            <div class="card teal">
+              <h3>長所</h3>
+              <ul>
+                <li>小さいファイルが大量にあるときに強い</li>
+                <li>似た内容が多いほど圧縮率が上がりやすい</li>
+                <li><code>zstd</code> により速度と圧縮率のバランスがよい</li>
+                <li><code>verify</code> で内容確認ができる</li>
+                <li>必要なら暗号化できる</li>
+              </ul>
+            </div>
+            <div class="card orange">
+              <h3>注意点</h3>
+              <ul>
+                <li>1 ファイルだけ欲しくても、そのチャンク全体を読む必要がある</li>
+                <li>ZIP のように各ファイルが完全独立ではない</li>
+                <li><code>--threads</code> や <code>--chunk-size</code> を大きくするとメモリも増える</li>
+              </ul>
+            </div>
+          </div>
+          <div class="callout warn">
+            <strong>運用で特に重要な点:</strong>
+            圧縮時は、各ワーカーがチャンク 1 個分の未圧縮データをメモリ上に組み立ててから圧縮します。
+            低メモリ環境では <code>--threads 1</code> や小さめの <code>--chunk-size</code> が効きます。
+          </div>
+        </section>
+
+        <section class="section" id="chunk">
+          <div class="section-head">
+            <span class="num">06</span>
+            <h2>チャンクサイズの考え方</h2>
+            <p class="lead">zfold では、複数ファイルをある程度のサイズで区切って「チャンク」にまとめます。</p>
+          </div>
+          <p>
+            たとえば <code>--chunk-size 16777216</code> なら、目標として約 16 MiB ごとにチャンクを作ります。
+            これは目標値であって、絶対上限ではありません。単一の大きいファイルは、それだけで大きいチャンクになることがあります。
+          </p>
+          <div class="mini-grid">
+            <div class="card teal">
+              <h3>小さめにすると</h3>
+              <ul>
+                <li>メモリを抑えやすい</li>
+                <li>一部展開の無駄が減りやすい</li>
+                <li>圧縮率は少し下がることがある</li>
+              </ul>
+            </div>
+            <div class="card orange">
+              <h3>大きめにすると</h3>
+              <ul>
+                <li>圧縮率が少し良くなることがある</li>
+                <li>圧縮時のメモリ消費が増える</li>
+                <li>一部展開で読む量も増えやすい</li>
+              </ul>
+            </div>
+          </div>
+          <pre><code>zfold pack ./dataset -o dataset.zpk --threads 1 --chunk-size 8388608</code></pre>
+          <div class="tag-row">
+            <span class="tag navy">低メモリ環境ではこのような設定から始めると安定しやすい</span>
+          </div>
+        </section>
+
+        <section class="section" id="dict">
+          <div class="section-head">
+            <span class="num">07</span>
+            <h2>辞書ファイルとは何か</h2>
+            <p class="lead">
+              <code>zstd</code> には「辞書圧縮」があります。よく出る文字列やバイト列のパターンを事前に学習し、
+              その知識を使って圧縮する仕組みです。
+            </p>
+          </div>
+          <div class="diagram">
+            <div class="flow">
+              <span class="file">似たサンプル群</span>
+              <span class="arrow">→</span>
+              <span class="file">train-dict</span>
+              <span class="arrow">→</span>
+              <span class="file">app.dict</span>
+              <span class="arrow">→</span>
+              <span class="chunk">pack --dict で圧縮</span>
+            </div>
+            <p>辞書は圧縮のヒント集のようなものです。似た HTML / JSON / 設定ファイルなどで効果が出やすくなります。</p>
+          </div>
+          <div class="cards">
+            <div class="card teal">
+              <h3>辞書を使うメリット</h3>
+              <ul>
+                <li>小さいファイル群で圧縮率が上がりやすい</li>
+                <li>共通パターンの多いデータで特に効く</li>
+                <li>同じ種類のデータを何度も固める運用に向く</li>
+              </ul>
+            </div>
+            <div class="card navy">
+              <h3>効きやすい例</h3>
+              <ul>
+                <li>HTML の共通テンプレート</li>
+                <li>同じキー構造を持つ JSON</li>
+                <li>よく似た設定ファイルやログ</li>
+              </ul>
+            </div>
+            <div class="card orange">
+              <h3>効きにくい例</h3>
+              <ul>
+                <li>画像、動画、音声</li>
+                <li>すでに圧縮済みのデータ</li>
+                <li>種類がバラバラで共通点が少ないデータ</li>
+              </ul>
+            </div>
+          </div>
+          <div class="callout">
+            <strong>大きな利点:</strong> <code>pack --dict</code> で使った辞書はアーカイブの中にも埋め込まれるため、
+            展開側が別に辞書ファイルを持っていなくても解凍できます。
+          </div>
+        </section>
+        <section class="section" id="train">
+          <div class="section-head">
+            <span class="num">08</span>
+            <h2>辞書ファイルはどう作るのか</h2>
+            <p class="lead">辞書は <code>train-dict</code> で作れます。大事なのは「これから圧縮したいデータに似たサンプルを使う」ことです。</p>
+          </div>
+          <pre><code>zfold train-dict ./snap1 ./snap2 ./snap3 -o app.dict --mode text</code></pre>
+          <div class="mini-grid">
+            <div class="card green">
+              <h3>良い辞書になる考え方</h3>
+              <ul>
+                <li>これから圧縮したいデータに似たサンプルを使う</li>
+                <li>まずは <code>--mode text</code> から試す</li>
+                <li><code>--extensions</code> や <code>--include</code> で対象を絞る</li>
+              </ul>
+            </div>
+            <div class="card orange">
+              <h3>避けたいパターン</h3>
+              <ul>
+                <li>設定ファイル向け辞書を画像から作る</li>
+                <li>実データと無関係なサンプルで学習する</li>
+                <li>種類が混ざりすぎて共通性が薄くなる</li>
+              </ul>
+            </div>
+          </div>
+          <pre><code>zfold train-dict ./app -o app.dict --include "config/**" --extensions ini,json,toml,yaml</code></pre>
+        </section>
+
+        <section class="section" id="choose">
+          <div class="section-head">
+            <span class="num">09</span>
+            <h2>ZIP と zfold の使い分け</h2>
+            <p class="lead">どちらが常に上ではなく、何を優先するかで選びます。</p>
+          </div>
+          <div class="compare">
+            <div class="panel">
+              <h3>zfold を選ぶとよい場面</h3>
+              <ul>
+                <li>小さいファイルが大量にある</li>
+                <li>ファイル同士がよく似ている</li>
+                <li>アーカイブ全体の圧縮率を重視したい</li>
+                <li>辞書を使ってさらに詰めたい</li>
+              </ul>
+            </div>
+            <div class="panel">
+              <h3>ZIP を選ぶとよい場面</h3>
+              <ul>
+                <li>誰でもすぐ開ける汎用形式を優先したい</li>
+                <li>1 ファイル単位の独立した取り出しやすさが欲しい</li>
+                <li>圧縮済みファイルが中心で差が期待しにくい</li>
+              </ul>
+            </div>
+          </div>
+          <div class="callout">
+            <strong>ひとことで言うと:</strong> zfold は「汎用交換フォーマット」というより、
+            「似た小ファイル群を効率よくまとめるための専用寄りツール」と考えると分かりやすいです。
+          </div>
+        </section>
+
+        <section class="section" id="security">
+          <div class="section-head">
+            <span class="num">10</span>
+            <h2>パスワード保護と verify</h2>
+            <p class="lead">必要なら暗号化でき、作成後は verify で壊れていないか確認できます。</p>
+          </div>
+          <div class="mini-grid stack">
+            <div class="card navy">
+              <h3>暗号化の基本</h3>
+              <pre><code>zfold pack ./dataset -o secure.zpk --password-prompt</code></pre>
+              <ul>
+                <li>チャンクデータ、埋め込み辞書、index が暗号化される</li>
+                <li>ヘッダとフッタは形式判定のため平文のまま</li>
+              </ul>
+            </div>
+            <div class="card teal">
+              <h3>verify の意味</h3>
+              <pre><code>zfold verify dataset.zpk</code></pre>
+              <ul>
+                <li>構造が壊れていないか確認する</li>
+                <li>各ファイルの内容が一致しているかも確認する</li>
+                <li>バックアップ用途では pack 後に回すと安心</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <span class="num">11</span>
+            <h2>よくある使い方</h2>
+            <p class="lead">最初は単純に始めて、必要になったら辞書や暗号化を足すのがおすすめです。</p>
+          </div>
+          <div class="cards examples">
+            <div class="card teal">
+              <h3>とりあえずまとめる</h3>
+              <pre><code>zfold pack ./project -o project.zpk</code></pre>
+            </div>
+            <div class="card orange">
+              <h3>低メモリ環境で安全寄りに</h3>
+              <pre><code>zfold pack ./project -o project.zpk --threads 1 --chunk-size 8388608</code></pre>
+            </div>
+            <div class="card navy">
+              <h3>辞書を作ってから圧縮</h3>
+              <pre><code>zfold train-dict ./snap1 ./snap2 ./snap3 -o app.dict --mode text
+zfold pack ./project -o project.zpk --dict app.dict</code></pre>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="summary">
+          <div class="section-head">
+            <span class="num">12</span>
+            <h2>まとめ</h2>
+            <p class="lead">zfold は、似た小ファイル群を効率よくまとめて保存するのに向いたツールです。</p>
+          </div>
+          <div class="summary-list">
+            <div class="summary-item">
+              <strong>1</strong>
+              <div>ZIP のように各ファイルを別々に圧縮するのではなく、チャンク単位でまとめて圧縮します。</div>
+            </div>
+            <div class="summary-item">
+              <strong>2</strong>
+              <div>そのため、小さいファイルが大量にある環境で圧縮率が良くなりやすいです。</div>
+            </div>
+            <div class="summary-item">
+              <strong>3</strong>
+              <div>辞書ファイルを使うと、共通パターンの多い小ファイル群でさらに効果が出やすくなります。</div>
+            </div>
+          </div>
+          <div class="callout good">
+            <strong>迷ったらこう始める:</strong> まずは辞書なしで使い、効果が欲しいデータ群に対してだけ辞書を導入するのが現実的です。
+          </div>
+        </section>
+      </article>
+    </div>
+
+    <div class="footer">
+      この HTML は <code>docs/zfold-guide.ja.md</code> の内容を元に、ブラウザ閲覧向けに再構成したものです。
+    </div>
+  </div>
+</body>
+</html>

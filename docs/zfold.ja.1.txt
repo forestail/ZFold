@@ -1,14 +1,17 @@
-HPACK(1)
+ZFOLD(1)
 
 名前
-    hpack - ディレクトリのスナップショットやバックアップ向けの小ファイル solid archive CLI
+    zfold - ディレクトリのスナップショットやバックアップ向けの小ファイル solid archive CLI
 
 書式
-    hpack <COMMAND> [OPTIONS]
+    zfold <COMMAND> [OPTIONS]
 
 説明
-    hpack はディレクトリを再帰走査し、ファイルを solid チャンクにまとめ、各チャンクを
+    zfold はディレクトリを再帰走査し、ファイルを solid チャンクにまとめ、各チャンクを
     zstd で圧縮して単一のアーカイブファイルへ書き出します。
+
+    pack では、完了したチャンクをチャンク順に逐次書き出します。これにより、
+    バッファリング量はアーカイブ全体ではなく、進行中の処理ぶんに抑えられます。
 
     アーカイブはパスワードによる暗号化にも対応します。暗号化対象は以下です。
         チャンクデータ
@@ -46,7 +49,7 @@ HPACK(1)
 
 PACK
     書式
-        hpack pack <INPUT_DIR> -o <ARCHIVE>
+        zfold pack <INPUT_DIR> -o <ARCHIVE>
             [--chunk-size <BYTES>]
             [--level <LEVEL>]
             [--threads <N>]
@@ -71,6 +74,9 @@ PACK
             これは目標値であり、厳密な上限ではありません。単一の大きいファイルは
             この値を超えるチャンクになることがあります。
 
+            pack のピークメモリはこの値にも依存します。各アクティブワーカーは圧縮前に
+            1 チャンク分の未圧縮データをメモリ上に組み立てるためです。
+
         --level <LEVEL>
             zstd 圧縮レベル
             既定値: 5
@@ -78,6 +84,9 @@ PACK
         --threads <N>
             rayon のワーカースレッド数
             省略時は rayon の既定スレッド数を使います。
+
+            値を大きくするとスループットは上がりやすい一方、ピークメモリも
+            アクティブワーカー数に応じて増えます。
 
         --dict <DICT_FILE>
             事前学習済みの zstd 辞書ファイルを使います。
@@ -111,9 +120,11 @@ PACK
     注記
         --password を使うと、シェル履歴やプロセス一覧にパスワードが露出する可能性があります。
 
+        pack は一時ファイルへ書き出し、正常終了後に最終パスへ移動します。
+
 LIST
     書式
-        hpack list <ARCHIVE>
+        zfold list <ARCHIVE>
             [--password <PASSWORD>]
             [--password-env <VAR>]
             [--password-file <PATH>]
@@ -150,7 +161,7 @@ LIST
 
 EXTRACT
     書式
-        hpack extract <ARCHIVE> -d <OUT_DIR>
+        zfold extract <ARCHIVE> -d <OUT_DIR>
             [--only <PATH>]
             [--prefix <PREFIX>]
             [--password <PASSWORD>]
@@ -190,7 +201,7 @@ EXTRACT
 
 VERIFY
     書式
-        hpack verify <ARCHIVE>
+        zfold verify <ARCHIVE>
             [--password <PASSWORD>]
             [--password-env <VAR>]
             [--password-file <PATH>]
@@ -222,7 +233,7 @@ VERIFY
 
 TRAIN-DICT
     書式
-        hpack train-dict <INPUT_DIR>...
+        zfold train-dict <INPUT_DIR>...
             -o <DICT_FILE>
             [--max-samples <N>]
             [--dict-size <BYTES>]
@@ -299,26 +310,27 @@ TRAIN-DICT
         assets/*.png
 
 使用例
-    hpack pack ./dataset -o dataset.hpk
-    hpack pack ./dataset -o dataset.hpk --chunk-size 33554432 --level 8
-    hpack pack ./dataset -o dataset.hpk --dict app.dict --exclude "*.png"
-    hpack pack ./dataset -o secure.hpk --password "correct horse battery staple"
-    hpack pack ./dataset -o secure.hpk --password-env HPACK_PASSWORD
-    hpack pack ./dataset -o secure.hpk --password-file ./archive.pass
-    hpack pack ./dataset -o secure.hpk --password-prompt
-    hpack list dataset.hpk
-    hpack list secure.hpk --password "correct horse battery staple"
-    hpack list secure.hpk --password-env HPACK_PASSWORD
-    hpack extract dataset.hpk -d ./out
-    hpack extract secure.hpk -d ./out --password "correct horse battery staple"
-    hpack extract secure.hpk -d ./out --password-file ./archive.pass
-    hpack extract dataset.hpk -d ./out --only "docs/index.html"
-    hpack extract dataset.hpk -d ./out --prefix "docs/"
-    hpack verify dataset.hpk
-    hpack verify secure.hpk --password "correct horse battery staple"
-    hpack verify secure.hpk --password-env HPACK_PASSWORD
-    hpack train-dict ./snap1 ./snap2 ./snap3 -o app.dict --mode text --extensions ini,json,txt
-    hpack train-dict ./app -o app.dict --include "config/**" --exclude "*.png" --dict-size 65536
+    zfold pack ./dataset -o dataset.zpk
+    zfold pack ./dataset -o dataset.zpk --chunk-size 33554432 --level 8
+    zfold pack ./dataset -o dataset.zpk --threads 1 --chunk-size 8388608
+    zfold pack ./dataset -o dataset.zpk --dict app.dict --exclude "*.png"
+    zfold pack ./dataset -o secure.zpk --password "correct horse battery staple"
+    zfold pack ./dataset -o secure.zpk --password-env ZFOLD_PASSWORD
+    zfold pack ./dataset -o secure.zpk --password-file ./archive.pass
+    zfold pack ./dataset -o secure.zpk --password-prompt
+    zfold list dataset.zpk
+    zfold list secure.zpk --password "correct horse battery staple"
+    zfold list secure.zpk --password-env ZFOLD_PASSWORD
+    zfold extract dataset.zpk -d ./out
+    zfold extract secure.zpk -d ./out --password "correct horse battery staple"
+    zfold extract secure.zpk -d ./out --password-file ./archive.pass
+    zfold extract dataset.zpk -d ./out --only "docs/index.html"
+    zfold extract dataset.zpk -d ./out --prefix "docs/"
+    zfold verify dataset.zpk
+    zfold verify secure.zpk --password "correct horse battery staple"
+    zfold verify secure.zpk --password-env ZFOLD_PASSWORD
+    zfold train-dict ./snap1 ./snap2 ./snap3 -o app.dict --mode text --extensions ini,json,txt
+    zfold train-dict ./app -o app.dict --include "config/**" --exclude "*.png" --dict-size 65536
 
 終了ステータス
     0
@@ -332,6 +344,8 @@ TRAIN-DICT
 
     pack を --password、--password-env、--password-file、--password-prompt のいずれも
     付けずに実行した場合、アーカイブ暗号化は行われません。
+
+    低メモリ環境では、--chunk-size を小さくするか、--threads 1 を指定してください。
 
     train-dict は、コーパスが小さすぎるのに対して --dict-size が大きすぎると
     失敗することがあります。その場合は --dict-size を下げるか、学習サンプルを

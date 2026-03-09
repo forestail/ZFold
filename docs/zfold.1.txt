@@ -1,14 +1,17 @@
-HPACK(1)
+ZFOLD(1)
 
 NAME
-    hpack - small-file solid archive CLI for directory snapshots and backups
+    zfold - small-file solid archive CLI for directory snapshots and backups
 
 SYNOPSIS
-    hpack <COMMAND> [OPTIONS]
+    zfold <COMMAND> [OPTIONS]
 
 DESCRIPTION
-    hpack recursively scans a directory, groups files into solid chunks, compresses each chunk
+    zfold recursively scans a directory, groups files into solid chunks, compresses each chunk
     with zstd, and writes a single archive file.
+
+    During pack, completed chunks are written incrementally in chunk order. This keeps buffering
+    bounded to in-flight work instead of the full archive.
 
     Archives may also be encrypted with a password. Encryption covers:
         chunk data
@@ -46,7 +49,7 @@ COMMANDS
 
 PACK
     SYNOPSIS
-        hpack pack <INPUT_DIR> -o <ARCHIVE>
+        zfold pack <INPUT_DIR> -o <ARCHIVE>
             [--chunk-size <BYTES>]
             [--level <LEVEL>]
             [--threads <N>]
@@ -71,6 +74,9 @@ PACK
             This is a target, not a hard cap. A single large file may produce a chunk larger
             than this value.
 
+            Peak pack memory still depends on this value because each active worker assembles one
+            uncompressed chunk in memory before compression.
+
         --level <LEVEL>
             zstd compression level.
             Default: 5
@@ -78,6 +84,9 @@ PACK
         --threads <N>
             Number of rayon worker threads.
             If omitted, rayon uses its default thread count.
+
+            Higher values usually improve throughput, but peak pack memory also increases with
+            the number of active workers.
 
         --dict <DICT_FILE>
             Use a pre-trained zstd dictionary file.
@@ -111,9 +120,11 @@ PACK
     NOTES
         Using --password exposes the password in shell history and process listings.
 
+        pack writes to a temporary file and moves it into place after a successful run.
+
 LIST
     SYNOPSIS
-        hpack list <ARCHIVE>
+        zfold list <ARCHIVE>
             [--password <PASSWORD>]
             [--password-env <VAR>]
             [--password-file <PATH>]
@@ -145,12 +156,12 @@ LIST
             <ORIGINAL_SIZE>\t<CHUNK_ID>\t<PATH>
 
     NOTES
-        If the archive is encrypted and no password source is specified, hpack prompts for the
+        If the archive is encrypted and no password source is specified, zfold prompts for the
         password before reading the index.
 
 EXTRACT
     SYNOPSIS
-        hpack extract <ARCHIVE> -d <OUT_DIR>
+        zfold extract <ARCHIVE> -d <OUT_DIR>
             [--only <PATH>]
             [--prefix <PREFIX>]
             [--password <PASSWORD>]
@@ -185,12 +196,12 @@ EXTRACT
         Extraction loads only the needed chunks, but each referenced chunk is fully decompressed
         before the selected files are sliced out.
 
-        If the archive is encrypted and no password source is specified, hpack prompts for the
+        If the archive is encrypted and no password source is specified, zfold prompts for the
         password before reading encrypted metadata.
 
 VERIFY
     SYNOPSIS
-        hpack verify <ARCHIVE>
+        zfold verify <ARCHIVE>
             [--password <PASSWORD>]
             [--password-env <VAR>]
             [--password-file <PATH>]
@@ -217,12 +228,12 @@ VERIFY
         per-file CRC32 against decompressed content
 
     NOTES
-        If the archive is encrypted and no password source is specified, hpack prompts for the
+        If the archive is encrypted and no password source is specified, zfold prompts for the
         password before reading encrypted metadata.
 
 TRAIN-DICT
     SYNOPSIS
-        hpack train-dict <INPUT_DIR>...
+        zfold train-dict <INPUT_DIR>...
             -o <DICT_FILE>
             [--max-samples <N>]
             [--dict-size <BYTES>]
@@ -299,26 +310,27 @@ PATTERN MATCHING
         assets/*.png
 
 EXAMPLES
-    hpack pack ./dataset -o dataset.hpk
-    hpack pack ./dataset -o dataset.hpk --chunk-size 33554432 --level 8
-    hpack pack ./dataset -o dataset.hpk --dict app.dict --exclude "*.png"
-    hpack pack ./dataset -o secure.hpk --password "correct horse battery staple"
-    hpack pack ./dataset -o secure.hpk --password-env HPACK_PASSWORD
-    hpack pack ./dataset -o secure.hpk --password-file ./archive.pass
-    hpack pack ./dataset -o secure.hpk --password-prompt
-    hpack list dataset.hpk
-    hpack list secure.hpk --password "correct horse battery staple"
-    hpack list secure.hpk --password-env HPACK_PASSWORD
-    hpack extract dataset.hpk -d ./out
-    hpack extract secure.hpk -d ./out --password "correct horse battery staple"
-    hpack extract secure.hpk -d ./out --password-file ./archive.pass
-    hpack extract dataset.hpk -d ./out --only "docs/index.html"
-    hpack extract dataset.hpk -d ./out --prefix "docs/"
-    hpack verify dataset.hpk
-    hpack verify secure.hpk --password "correct horse battery staple"
-    hpack verify secure.hpk --password-env HPACK_PASSWORD
-    hpack train-dict ./snap1 ./snap2 ./snap3 -o app.dict --mode text --extensions ini,json,txt
-    hpack train-dict ./app -o app.dict --include "config/**" --exclude "*.png" --dict-size 65536
+    zfold pack ./dataset -o dataset.zpk
+    zfold pack ./dataset -o dataset.zpk --chunk-size 33554432 --level 8
+    zfold pack ./dataset -o dataset.zpk --threads 1 --chunk-size 8388608
+    zfold pack ./dataset -o dataset.zpk --dict app.dict --exclude "*.png"
+    zfold pack ./dataset -o secure.zpk --password "correct horse battery staple"
+    zfold pack ./dataset -o secure.zpk --password-env ZFOLD_PASSWORD
+    zfold pack ./dataset -o secure.zpk --password-file ./archive.pass
+    zfold pack ./dataset -o secure.zpk --password-prompt
+    zfold list dataset.zpk
+    zfold list secure.zpk --password "correct horse battery staple"
+    zfold list secure.zpk --password-env ZFOLD_PASSWORD
+    zfold extract dataset.zpk -d ./out
+    zfold extract secure.zpk -d ./out --password "correct horse battery staple"
+    zfold extract secure.zpk -d ./out --password-file ./archive.pass
+    zfold extract dataset.zpk -d ./out --only "docs/index.html"
+    zfold extract dataset.zpk -d ./out --prefix "docs/"
+    zfold verify dataset.zpk
+    zfold verify secure.zpk --password "correct horse battery staple"
+    zfold verify secure.zpk --password-env ZFOLD_PASSWORD
+    zfold train-dict ./snap1 ./snap2 ./snap3 -o app.dict --mode text --extensions ini,json,txt
+    zfold train-dict ./app -o app.dict --include "config/**" --exclude "*.png" --dict-size 65536
 
 EXIT STATUS
     0
@@ -332,6 +344,8 @@ NOTES
 
     If pack is run without --password, --password-env, --password-file, or --password-prompt,
     no archive encryption is used.
+
+    In low-memory environments, prefer a smaller --chunk-size and/or --threads 1.
 
     train-dict may fail if the corpus is too small for the requested --dict-size. In that case,
     reduce --dict-size or provide more training samples.
