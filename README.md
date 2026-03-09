@@ -1,12 +1,15 @@
 HPACK(1)
 
 NAME
+
     hpack - small-file solid archive CLI for directory snapshots and backups
 
 SYNOPSIS
+
     hpack <COMMAND> [OPTIONS]
 
 DESCRIPTION
+
     hpack recursively scans a directory, groups files into solid chunks, compresses each chunk
     with zstd, and writes a single archive file.
 
@@ -29,6 +32,7 @@ DESCRIPTION
     than file-level.
 
 COMMANDS
+
     pack
         Pack a directory into an archive.
 
@@ -45,6 +49,7 @@ COMMANDS
         Train a zstd dictionary from one or more input directories.
 
 PACK
+
     SYNOPSIS
         hpack pack <INPUT_DIR> -o <ARCHIVE>
             [--chunk-size <BYTES>]
@@ -112,6 +117,7 @@ PACK
         Using --password exposes the password in shell history and process listings.
 
 LIST
+
     SYNOPSIS
         hpack list <ARCHIVE>
             [--password <PASSWORD>]
@@ -149,6 +155,7 @@ LIST
         password before reading the index.
 
 EXTRACT
+
     SYNOPSIS
         hpack extract <ARCHIVE> -d <OUT_DIR>
             [--only <PATH>]
@@ -189,6 +196,7 @@ EXTRACT
         password before reading encrypted metadata.
 
 VERIFY
+
     SYNOPSIS
         hpack verify <ARCHIVE>
             [--password <PASSWORD>]
@@ -221,6 +229,7 @@ VERIFY
         password before reading encrypted metadata.
 
 TRAIN-DICT
+
     SYNOPSIS
         hpack train-dict <INPUT_DIR>...
             -o <DICT_FILE>
@@ -291,6 +300,7 @@ TRAIN-DICT
         All filters are applied to archive-relative paths.
 
 PATTERN MATCHING
+
     Glob patterns are matched against relative paths normalized with '/' separators.
 
     Examples:
@@ -299,6 +309,7 @@ PATTERN MATCHING
         assets/*.png
 
 EXAMPLES
+
     hpack pack ./dataset -o dataset.hpk
     hpack pack ./dataset -o dataset.hpk --chunk-size 33554432 --level 8
     hpack pack ./dataset -o dataset.hpk --dict app.dict --exclude "*.png"
@@ -321,6 +332,7 @@ EXAMPLES
     hpack train-dict ./app -o app.dict --include "config/**" --exclude "*.png" --dict-size 65536
 
 EXIT STATUS
+
     0
         Success.
 
@@ -328,6 +340,7 @@ EXIT STATUS
         Failure.
 
 NOTES
+
     If pack is run without --dict, no dictionary is used.
 
     If pack is run without --password, --password-env, --password-file, or --password-prompt,
