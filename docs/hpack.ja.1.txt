@@ -1,0 +1,347 @@
+HPACK(1)
+
+名前
+    hpack - ディレクトリのスナップショットやバックアップ向けの小ファイル solid archive CLI
+
+書式
+    hpack <COMMAND> [OPTIONS]
+
+説明
+    hpack はディレクトリを再帰走査し、ファイルを solid チャンクにまとめ、各チャンクを
+    zstd で圧縮して単一のアーカイブファイルへ書き出します。
+
+    アーカイブはパスワードによる暗号化にも対応します。暗号化対象は以下です。
+        チャンクデータ
+        任意の辞書 blob
+        バイナリ index
+
+    ヘッダとフッタは平文のままです。これにより、パスワード入力前でもツールが
+    アーカイブ形式、フラグ、メタデータ配置を判定できます。
+
+    アーカイブ形式は version 1 です。構成は以下です。
+        固定長ヘッダ
+        圧縮済みチャンクデータ
+        任意の専用辞書 blob
+        バイナリ index
+        固定長フッタ
+
+    extract は必要なチャンクだけを読み込みますが、展開粒度はファイル単位ではなく
+    チャンク単位です。
+
+コマンド
+    pack
+        ディレクトリをアーカイブにまとめる
+
+    list
+        アーカイブのメタデータとファイル一覧を表示する
+
+    extract
+        全ファイルまたは条件に合う一部ファイルを展開する
+
+    verify
+        アーカイブ構造と各ファイルの CRC32 を検証する
+
+    train-dict
+        1 つ以上の入力ディレクトリから zstd 辞書を学習する
+
+PACK
+    書式
+        hpack pack <INPUT_DIR> -o <ARCHIVE>
+            [--chunk-size <BYTES>]
+            [--level <LEVEL>]
+            [--threads <N>]
+            [--dict <DICT_FILE>]
+            [--password <PASSWORD>]
+            [--password-env <VAR>]
+            [--password-file <PATH>]
+            [--password-prompt]
+            [--exclude <GLOB>]...
+
+    オプション
+        <INPUT_DIR>
+            アーカイブ化する入力ディレクトリ
+
+        -o, --output <ARCHIVE>
+            出力アーカイブパス
+
+        --chunk-size <BYTES>
+            目標チャンクサイズ（バイト単位）
+            既定値: 16777216 (16 MiB)
+
+            これは目標値であり、厳密な上限ではありません。単一の大きいファイルは
+            この値を超えるチャンクになることがあります。
+
+        --level <LEVEL>
+            zstd 圧縮レベル
+            既定値: 5
+
+        --threads <N>
+            rayon のワーカースレッド数
+            省略時は rayon の既定スレッド数を使います。
+
+        --dict <DICT_FILE>
+            事前学習済みの zstd 辞書ファイルを使います。
+            指定した場合、辞書バイト列は専用 blob としてアーカイブへ埋め込まれます。
+
+        --password <PASSWORD>
+            コマンドラインから直接アーカイブパスワードを読みます。
+            このオプションを指定するとアーカイブは暗号化されます。
+            --password-env、--password-file、--password-prompt と同時には使えません。
+
+        --password-env <VAR>
+            指定した環境変数からアーカイブパスワードを読みます。
+            このオプションを指定するとアーカイブは暗号化されます。
+            --password、--password-file、--password-prompt と同時には使えません。
+
+        --password-file <PATH>
+            ファイルからアーカイブパスワードを読みます。
+            末尾の CR/LF は取り除かれます。
+            このオプションを指定するとアーカイブは暗号化されます。
+            --password、--password-env、--password-prompt と同時には使えません。
+
+        --password-prompt
+            端末上でアーカイブパスワードの入力を求めます。
+            このオプションを指定するとアーカイブは暗号化されます。
+            --password、--password-env、--password-file と同時には使えません。
+
+        --exclude <GLOB>
+            アーカイブ相対パスに対する glob に一致するファイルを除外します。
+            複数回指定できます。
+
+    注記
+        --password を使うと、シェル履歴やプロセス一覧にパスワードが露出する可能性があります。
+
+LIST
+    書式
+        hpack list <ARCHIVE>
+            [--password <PASSWORD>]
+            [--password-env <VAR>]
+            [--password-file <PATH>]
+
+    オプション
+        --password <PASSWORD>
+            コマンドラインから直接アーカイブパスワードを読みます。
+
+        --password-env <VAR>
+            指定した環境変数からアーカイブパスワードを読みます。
+
+        --password-file <PATH>
+            ファイルからアーカイブパスワードを読みます。
+
+    出力
+        まず以下を表示します。
+            archive
+            version
+            encrypted
+            size
+            files
+            chunks
+            chunk_size
+            dictionary
+            dictionary_size
+            index_size
+
+        その後、各ファイルを次の形式で 1 行ずつ表示します。
+            <ORIGINAL_SIZE>\t<CHUNK_ID>\t<PATH>
+
+    注記
+        アーカイブが暗号化されていてパスワード指定がない場合、index を読む前に
+        パスワード入力を求めます。
+
+EXTRACT
+    書式
+        hpack extract <ARCHIVE> -d <OUT_DIR>
+            [--only <PATH>]
+            [--prefix <PREFIX>]
+            [--password <PASSWORD>]
+            [--password-env <VAR>]
+            [--password-file <PATH>]
+
+    オプション
+        <ARCHIVE>
+            入力アーカイブパス
+
+        -d, --out-dir <OUT_DIR>
+            展開先ディレクトリ
+
+        --only <PATH>
+            指定したアーカイブ相対パス 1 件だけを展開します。
+
+        --prefix <PREFIX>
+            指定 prefix で始まるパスだけを展開します。
+
+        --password <PASSWORD>
+            コマンドラインから直接アーカイブパスワードを読みます。
+
+        --password-env <VAR>
+            指定した環境変数からアーカイブパスワードを読みます。
+
+        --password-file <PATH>
+            ファイルからアーカイブパスワードを読みます。
+
+    注記
+        --only と --prefix の両方を指定した場合は、両方の条件を満たす必要があります。
+
+        展開では必要なチャンクだけを読みますが、参照されたチャンクは丸ごと 1 回
+        展開した上で、目的ファイルの範囲を切り出します。
+
+        アーカイブが暗号化されていてパスワード指定がない場合、暗号化された
+        メタデータを読む前にパスワード入力を求めます。
+
+VERIFY
+    書式
+        hpack verify <ARCHIVE>
+            [--password <PASSWORD>]
+            [--password-env <VAR>]
+            [--password-file <PATH>]
+
+    オプション
+        --password <PASSWORD>
+            コマンドラインから直接アーカイブパスワードを読みます。
+
+        --password-env <VAR>
+            指定した環境変数からアーカイブパスワードを読みます。
+
+        --password-file <PATH>
+            ファイルからアーカイブパスワードを読みます。
+
+    検証内容
+        ヘッダ / フッタのマジック値と構造
+        アーカイブ version
+        バイナリ index の CRC32
+        file_count / chunk_count の整合性
+        辞書配置
+        チャンク境界
+        重複ファイルパス
+        各チャンク内のファイル範囲
+        展開内容に対する各ファイルの CRC32
+
+    注記
+        アーカイブが暗号化されていてパスワード指定がない場合、暗号化された
+        メタデータを読む前にパスワード入力を求めます。
+
+TRAIN-DICT
+    書式
+        hpack train-dict <INPUT_DIR>...
+            -o <DICT_FILE>
+            [--max-samples <N>]
+            [--dict-size <BYTES>]
+            [--max-sample-bytes <BYTES>]
+            [--include <GLOB>]...
+            [--exclude <GLOB>]...
+            [--extensions <EXT[,EXT...]>]
+            [--mode all|text|html]
+
+    オプション
+        <INPUT_DIR>...
+            学習コーパスとして使う 1 つ以上の入力ディレクトリ
+
+        -o, --output <DICT_FILE>
+            出力辞書ファイルパス
+
+        --max-samples <N>
+            学習に使うファイルサンプルの最大数
+            既定値: 5000
+
+        --dict-size <BYTES>
+            目標辞書サイズ
+            既定値: 131072
+
+        --max-sample-bytes <BYTES>
+            各サンプルファイルから使う最大バイト数
+            既定値: 65536
+
+        --include <GLOB>
+            指定 glob に一致するファイルだけを対象にします。
+            複数回指定できます。
+            省略時は include 制限はありません。
+
+        --exclude <GLOB>
+            指定 glob に一致するファイルを除外します。
+            複数回指定できます。
+
+        --extensions <EXT[,EXT...]>
+            拡張子で候補を絞り込みます。
+            カンマ区切りで指定します。先頭のドットは省略できます。
+            例:
+                --extensions ini,json,txt,cfg
+
+        --mode all|text|html
+            候補選択プリセット
+            既定値: text
+
+            all
+                全ファイル種別を受け入れます
+
+            text
+                html、css、js、json、xml、txt、ini、cfg、toml、yaml、svg、sql
+                などの一般的なテキスト系拡張子を受け入れます
+
+            html
+                .html と .htm だけを受け入れます
+
+    フィルタリング
+        候補ファイルは以下を組み合わせて選択します。
+            入力ディレクトリ走査
+            --exclude
+            任意の --include
+            任意の --extensions
+            --mode
+
+        すべてのフィルタはアーカイブ相対パスに対して適用されます。
+
+パターンマッチ
+    Glob パターンは '/' 区切りに正規化された相対パスに対して評価されます。
+
+    例:
+        config/**
+        *.json
+        assets/*.png
+
+使用例
+    hpack pack ./dataset -o dataset.hpk
+    hpack pack ./dataset -o dataset.hpk --chunk-size 33554432 --level 8
+    hpack pack ./dataset -o dataset.hpk --dict app.dict --exclude "*.png"
+    hpack pack ./dataset -o secure.hpk --password "correct horse battery staple"
+    hpack pack ./dataset -o secure.hpk --password-env HPACK_PASSWORD
+    hpack pack ./dataset -o secure.hpk --password-file ./archive.pass
+    hpack pack ./dataset -o secure.hpk --password-prompt
+    hpack list dataset.hpk
+    hpack list secure.hpk --password "correct horse battery staple"
+    hpack list secure.hpk --password-env HPACK_PASSWORD
+    hpack extract dataset.hpk -d ./out
+    hpack extract secure.hpk -d ./out --password "correct horse battery staple"
+    hpack extract secure.hpk -d ./out --password-file ./archive.pass
+    hpack extract dataset.hpk -d ./out --only "docs/index.html"
+    hpack extract dataset.hpk -d ./out --prefix "docs/"
+    hpack verify dataset.hpk
+    hpack verify secure.hpk --password "correct horse battery staple"
+    hpack verify secure.hpk --password-env HPACK_PASSWORD
+    hpack train-dict ./snap1 ./snap2 ./snap3 -o app.dict --mode text --extensions ini,json,txt
+    hpack train-dict ./app -o app.dict --include "config/**" --exclude "*.png" --dict-size 65536
+
+終了ステータス
+    0
+        成功
+
+    non-zero
+        失敗
+
+注記
+    pack を --dict なしで実行した場合、辞書は使われません。
+
+    pack を --password、--password-env、--password-file、--password-prompt のいずれも
+    付けずに実行した場合、アーカイブ暗号化は行われません。
+
+    train-dict は、コーパスが小さすぎるのに対して --dict-size が大きすぎると
+    失敗することがあります。その場合は --dict-size を下げるか、学習サンプルを
+    増やしてください。
+
+    現在の公開アーカイブ形式は version 1 です。旧 JSON-index 形式は
+    サポートしていません。
+
+    パスワードはコマンドライン、環境変数、ファイル、対話プロンプトから
+    指定できます。
+
+    --password は、シェル履歴やプロセス一覧にパスワードが見える可能性があるため、
+    最も安全性の低い指定方法です。
