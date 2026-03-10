@@ -162,6 +162,7 @@ LIST
 EXTRACT
     書式
         zfold extract <ARCHIVE> -d <OUT_DIR>
+            [--threads <N>]
             [--only <PATH>]
             [--prefix <PREFIX>]
             [--password <PASSWORD>]
@@ -174,6 +175,10 @@ EXTRACT
 
         -d, --out-dir <OUT_DIR>
             展開先ディレクトリ
+
+        --threads <N>
+            チャンク展開に使うワーカースレッド数
+            省略時はシングルスレッドで展開します
 
         --only <PATH>
             指定したアーカイブ相対パス 1 件だけを展開します。
@@ -322,6 +327,7 @@ TRAIN-DICT
     zfold list secure.zpk --password "correct horse battery staple"
     zfold list secure.zpk --password-env ZFOLD_PASSWORD
     zfold extract dataset.zpk -d ./out
+    zfold extract dataset.zpk -d ./out --threads 4
     zfold extract secure.zpk -d ./out --password "correct horse battery staple"
     zfold extract secure.zpk -d ./out --password-file ./archive.pass
     zfold extract dataset.zpk -d ./out --only "docs/index.html"

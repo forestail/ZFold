@@ -172,6 +172,7 @@ EXTRACT
 
     SYNOPSIS
         zfold extract <ARCHIVE> -d <OUT_DIR>
+            [--threads <N>]
             [--only <PATH>]
             [--prefix <PREFIX>]
             [--password <PASSWORD>]
@@ -184,6 +185,10 @@ EXTRACT
 
         -d, --out-dir <OUT_DIR>
             Output directory for extracted files.
+
+        --threads <N>
+            Number of worker threads used to extract chunks.
+            If omitted, extraction runs on a single thread.
 
         --only <PATH>
             Extract exactly one archive-relative path.
@@ -336,6 +341,7 @@ EXAMPLES
     zfold list secure.zpk --password "correct horse battery staple"
     zfold list secure.zpk --password-env ZFOLD_PASSWORD
     zfold extract dataset.zpk -d ./out
+    zfold extract dataset.zpk -d ./out --threads 4
     zfold extract secure.zpk -d ./out --password "correct horse battery staple"
     zfold extract secure.zpk -d ./out --password-file ./archive.pass
     zfold extract dataset.zpk -d ./out --only "docs/index.html"

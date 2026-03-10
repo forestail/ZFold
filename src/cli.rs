@@ -66,6 +66,9 @@ pub struct ExtractArgs {
     pub out_dir: PathBuf,
 
     #[arg(long)]
+    pub threads: Option<usize>,
+
+    #[arg(long)]
     pub only: Option<String>,
 
     #[arg(long)]
